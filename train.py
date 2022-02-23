@@ -15,7 +15,7 @@ from editdistance import eval
 import operator
 from math import exp
 from editdistance import eval
-from math import 
+from math import log
 
 import torch
 import torch.backends.cudnn as cudnn
@@ -38,7 +38,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # python3 train.py --train_data data_lmdb_release/training --valid_data data_lmdb_release/validation --select_data MJ-ST --batch_ratio 0.5-0.5 --Transformation None --FeatureExtraction None --SequenceModeling None --Prediction None --Transformer --imgH 224 --imgW 224
 
 def train(opt):
-    dictionary=open("dictionary.txt").read().replace("\n\n", "\n").split("\n")
+    dictionary=open("/content/deep-text-recognition-benchmark/dictionary.txt").read().replace("\n\n", "\n").split("\n")
     trie=Trie(dictionary)
     """ dataset preparation """
     if not opt.data_filtering_off:
@@ -200,7 +200,7 @@ def train(opt):
             crit=torch.nn.NLLLoss()
             target = converter.encode(labels)
             preds = model(image, text=target, seqlen=converter.batch_max_length)
-             _, preds_index = preds.topk(1, dim=-1, largest=True, sorted=True)
+            _, preds_index = preds.topk(1, dim=-1, largest=True, sorted=True)
             preds_index = preds_index.view(-1, converter.batch_max_length)
             length_for_pred = torch.IntTensor([converter.batch_max_length - 1] * batch_size).to(device)
             preds_str = converter.decode(preds_index[:, 1:], length_for_pred)
@@ -214,7 +214,7 @@ def train(opt):
                 for can in candidates:
                     word = []
                     word.append(converter.encodes(can[0]))
-                    distance_can.append(eval(preds_str,can[0])
+                    distance_can.append(eval(preds_str,can[0]))
                     while len(word) < 25:
                         word.append(105)
                     word = word[:25]
@@ -371,3 +371,4 @@ if __name__ == '__main__':
         """
 
     train(opt)
+
