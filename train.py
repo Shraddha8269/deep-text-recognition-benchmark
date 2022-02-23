@@ -3,18 +3,12 @@ import sys
 import time
 import random
 import string
-import os
-import sys
-import time
-import random
-import string
 import argparse
 import re
 from dict_trie import Trie
 from editdistance import eval
 import operator
 from math import exp
-from editdistance import eval
 from math import log
 
 import torch
@@ -38,7 +32,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # python3 train.py --train_data data_lmdb_release/training --valid_data data_lmdb_release/validation --select_data MJ-ST --batch_ratio 0.5-0.5 --Transformation None --FeatureExtraction None --SequenceModeling None --Prediction None --Transformer --imgH 224 --imgW 224
 
 def train(opt):
-    dictionary=open("/content/deep-text-recognition-benchmark/dictionary.txt").read().replace("\n\n", "\n").split("\n")
+    dictionary=open("dictionary.txt").read().replace("\n\n", "\n").split("\n")
     trie=Trie(dictionary)
     """ dataset preparation """
     if not opt.data_filtering_off:
@@ -206,7 +200,7 @@ def train(opt):
             preds_str = converter.decode(preds_index[:, 1:], length_for_pred)
             for label in labels:
                 for word in dictionary:
-                    candidates[word] = eval(label, word)
+                    candidates[word] = eval(label, word))
                 candidates = sorted(candidates.items(), key=operator.itemgetter(1))[: 20]
             
                 candidates_encoded = []
@@ -214,7 +208,7 @@ def train(opt):
                 for can in candidates:
                     word = []
                     word.append(converter.encodes(can[0]))
-                    distance_can.append(eval(preds_str,can[0]))
+                    distance_can.append(eval(preds_str,can[0])
                     while len(word) < 25:
                         word.append(105)
                     word = word[:25]
@@ -371,4 +365,3 @@ if __name__ == '__main__':
         """
 
     train(opt)
-
