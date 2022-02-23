@@ -200,7 +200,7 @@ def train(opt):
             preds_str = converter.decode(preds_index[:, 1:], length_for_pred)
             for label in labels:
                 for word in dictionary:
-                    candidates[word] = eval(label, word))
+                    candidates[word] = eval(label, word)
                 candidates = sorted(candidates.items(), key=operator.itemgetter(1))[: 20]
             
                 candidates_encoded = []
@@ -208,7 +208,7 @@ def train(opt):
                 for can in candidates:
                     word = []
                     word.append(converter.encodes(can[0]))
-                    distance_can.append(eval(preds_str,can[0])
+                    distance_can.append(eval(preds_str,can[0]))
                     while len(word) < 25:
                         word.append(105)
                     word = word[:25]
