@@ -8,8 +8,7 @@ from dict_trie import Trie
 from editdistance import eval
 import operator
 from math import exp
-from editdistance import eval
-from math import 
+from math import log
 import torch
 import torch.backends.cudnn as cudnn
 import torch.utils.data
@@ -69,9 +68,9 @@ def second_loss(prob,dict):
     loss2.append(a)
   return loss2,total
 
-def dict_setup():
-    dictionary=open("dictionary.txt").read().replace("\n\n", "\n").split("\n")
-    trie=Trie(dictionary)
+
+dictionary=open("dictionary.txt").read().replace("\n\n", "\n").split("\n")
+trie=Trie(dictionary)
 def loss_(predicted,actual,preds_prob):
   #if(predicted==actual):return predicted
   p=list(trie.all_levenshtein_(predicted, 2))
@@ -126,15 +125,8 @@ def loss_(predicted,actual,preds_prob):
     if(ans[j]==ans2[j]):return ans[j]
   return predicted
 
-      
-    
-
-    #divergence+=(total_edit_dist*log(loss))
-  #print("Training loss for"+str(i)+" is:"+str(actual_loss-divergence))
-  #print("Actual=",actual,"ans=",ans)
-  return ans
-
-
+ 
+ 
 def benchmark_all_eval(model, criterion, converter, opt): #, calculate_infer_time=False):
     """ evaluation with 10 benchmark evaluation datasets """
 
@@ -151,12 +143,10 @@ def benchmark_all_eval(model, criterion, converter, opt): #, calculate_infer_tim
     else:
         evaluation_batch_size = opt.batch_size
 
-    list_accuracy1 = []
-    list_accuracy2=[]
+    list_accuracy = []
     total_forward_time = 0
     total_evaluation_data_number = 0
-    total_correct_number1 = 0
-    total_correct_number2 = 0
+    total_correct_number = 0
     log = open(f'./result/{opt.exp_name}/log_all_evaluation.txt', 'a')
     dashed_line = '-' * 80
     print(dashed_line)
@@ -171,21 +161,19 @@ def benchmark_all_eval(model, criterion, converter, opt): #, calculate_infer_tim
             num_workers=int(opt.workers),
             collate_fn=AlignCollate_evaluation, pin_memory=True)
 
-        accuracy1,accuracy2, length_of_data = validation(
+        _, accuracy_by_best_model, norm_ED_by_best_model, _, _, _, infer_time, length_of_data = validation(
             model, criterion, evaluation_loader, converter, opt)
-        list_accuracy1.append(f'{accuracy1:0.3f}')
-        list_accuracy1.append(f'{accuracy1:0.3f}')
-        #total_forward_time += infer_time
-        #total_evaluation_data_number += len(eval_data)
-        total_correct_number1 += accuracy_by_best_model * length_of_data
-        total_correct_number2 += accuracy_by_best_model * length_of_data
-        #log.write(eval_data_log)
-        print(f'Acc {accuracy1:0.3f}\t Acc_dict {accuracy2:0.3f}')
-        #log.write(f'Acc {accuracy_by_best_model:0.3f}\t normalized_ED {norm_ED_by_best_model:0.3f}\n')
+        list_accuracy.append(f'{accuracy_by_best_model:0.3f}')
+        total_forward_time += infer_time
+        total_evaluation_data_number += len(eval_data)
+        total_correct_number += accuracy_by_best_model * length_of_data
+        log.write(eval_data_log)
+        print(f'Acc {accuracy_by_best_model:0.3f}\t normalized_ED {norm_ED_by_best_model:0.3f}')
+        log.write(f'Acc {accuracy_by_best_model:0.3f}\t normalized_ED {norm_ED_by_best_model:0.3f}\n')
         print(dashed_line)
         log.write(dashed_line + '\n')
 
-    """averaged_forward_time = total_forward_time / total_evaluation_data_number * 1000
+    averaged_forward_time = total_forward_time / total_evaluation_data_number * 1000
     total_accuracy = total_correct_number / total_evaluation_data_number
     params_num = sum([np.prod(p.size()) for p in model.parameters()])
 
@@ -200,13 +188,12 @@ def benchmark_all_eval(model, criterion, converter, opt): #, calculate_infer_tim
     log.write(evaluation_log + '\n')
     log.close()
 
-    return None"""
+    return None
 
 
 def validation(model, criterion, evaluation_loader, converter, opt):
     """ validation or evaluation """
-    n_correct_orig = 0
-    n_correct_dict=0
+    n_correct = 0
     norm_ED = 0
     length_of_data = 0
     infer_time = 0
@@ -278,7 +265,7 @@ def validation(model, criterion, evaluation_loader, converter, opt):
             if  opt.Transformer:
                 pred_EOS = pred.find('[s]')
                 pred = pred[:pred_EOS]  # prune after "end of sentence" token ([s])
-                #pred_max_prob = pred_max_prob[:pred_EOS]
+                pred_max_prob = pred_max_prob[:pred_EOS]
             elif 'Attn' in opt.Prediction:
                 gt = gt[:gt.find('[s]')]
                 pred_EOS = pred.find('[s]')
@@ -295,15 +282,10 @@ def validation(model, criterion, evaluation_loader, converter, opt):
                 gt = re.sub(out_of_alphanumeric_case_insensitve, '', gt)
 
             if pred == gt:
-                n_correct_orig += 1
-                n_correct_dict+=1
-                continue
+                n_correct += 1
             pred=loss_(pred,gt,pred_max_prob)
             if pred==gt:
-                n_correct_dict+=1
-          
-            
-               
+                n_correct+=1
 
             '''
             (old version) ICDAR2017 DOST Normalized Edit Distance https://rrc.cvc.uab.es/?ch=7&com=tasks
@@ -315,7 +297,7 @@ def validation(model, criterion, evaluation_loader, converter, opt):
             '''
 
             # ICDAR2019 Normalized Edit Distance
-           """ if len(gt) == 0 or len(pred) == 0:
+            if len(gt) == 0 or len(pred) == 0:
                 norm_ED += 0
             elif len(gt) > len(pred):
                 norm_ED += 1 - edit_distance(pred, gt) / len(gt)
@@ -328,13 +310,10 @@ def validation(model, criterion, evaluation_loader, converter, opt):
             except:
                 confidence_score = 0  # for empty pred case, when prune after "end of sentence" token ([s])
             confidence_score_list.append(confidence_score)
-            # print(pred, gt, pred==gt, confidence_score)"""
+            # print(pred, gt, pred==gt, confidence_score)
 
-    accuracy1 = n_correct1 / float(length_of_data) * 100
-    accuracy2 = n_correct2 / float(length_of_data) * 100
-    #norm_ED = norm_ED / float(length_of_data)  # ICDAR2019 Normalized Edit Distance
-    return accuracy1,accuracy2,length_of_data
-        
+    accuracy = n_correct / float(length_of_data) * 100
+    norm_ED = norm_ED / float(length_of_data)  # ICDAR2019 Normalized Edit Distance
 
     return valid_loss_avg.val(), accuracy, norm_ED, preds_str, confidence_score_list, labels, infer_time, length_of_data
 
@@ -343,7 +322,6 @@ def test(opt):
     """ model configuration """
     if opt.Transformer:
         converter = TokenLabelConverter(opt)
-        dict_setup()
     elif 'CTC' in opt.Prediction:
         converter = CTCLabelConverter(opt.character)
     else:
@@ -394,7 +372,7 @@ def test(opt):
                 shuffle=False,
                 num_workers=int(opt.workers),
                 collate_fn=AlignCollate_evaluation, pin_memory=True)
-             accuracy1,accuracy2= validation(
+            _, accuracy_by_best_model, _, _, _, _, _, _ = validation(
                 model, criterion, evaluation_loader, converter, opt)
             log.write(eval_data_log)
             print(f'{accuracy_by_best_model:0.3f}')
