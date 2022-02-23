@@ -3,8 +3,19 @@ import sys
 import time
 import random
 import string
+import os
+import sys
+import time
+import random
+import string
 import argparse
 import re
+from dict_trie import Trie
+from editdistance import eval
+import operator
+from math import exp
+from editdistance import eval
+from math import 
 
 import torch
 import torch.backends.cudnn as cudnn
@@ -27,6 +38,8 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # python3 train.py --train_data data_lmdb_release/training --valid_data data_lmdb_release/validation --select_data MJ-ST --batch_ratio 0.5-0.5 --Transformation None --FeatureExtraction None --SequenceModeling None --Prediction None --Transformer --imgH 224 --imgW 224
 
 def train(opt):
+    dictionary=open("dictionary.txt").read().replace("\n\n", "\n").split("\n")
+    trie=Trie(dictionary)
     """ dataset preparation """
     if not opt.data_filtering_off:
         print('Filtering the images containing characters which are not in opt.character')
@@ -179,9 +192,59 @@ def train(opt):
                 preds = preds.log_softmax(2).permute(1, 0, 2)
                 cost = criterion(preds, text, preds_size, length)
         elif opt.Transformer:
+            candidates = {}
+            target_candidates=[]
+            edit_dist=[]
+            ouptut=[]
+            scores=[]
+            crit=torch.nn.NLLLoss()
             target = converter.encode(labels)
             preds = model(image, text=target, seqlen=converter.batch_max_length)
-            cost = criterion(preds.view(-1, preds.shape[-1]), target.contiguous().view(-1))
+             _, preds_index = preds.topk(1, dim=-1, largest=True, sorted=True)
+            preds_index = preds_index.view(-1, converter.batch_max_length)
+            length_for_pred = torch.IntTensor([converter.batch_max_length - 1] * batch_size).to(device)
+            preds_str = converter.decode(preds_index[:, 1:], length_for_pred)
+            for label in labels:
+                for word in dictionary:
+                    candidates[word] = eval(label, word)
+                candidates = sorted(candidates.items(), key=operator.itemgetter(1))[: 20]
+            
+                candidates_encoded = []
+                distance_can = []
+                for can in candidates:
+                    word = []
+                    word.append(converter.encodes(can[0]))
+                    distance_can.append(eval(preds_str,can[0])
+                    while len(word) < 25:
+                        word.append(105)
+                    word = word[:25]
+                    candidates_encoded.append(word)
+
+                target_candidates.append(candidates_encoded)
+                edit_dist.append(distance_can)
+            targets = target_candidates
+            for i in range(0,len(targets)):
+                loss=0
+                edit=0
+                for j in range(0,len(i)):
+                    loss+=crit(preds[j],i[j])
+                    edit+=edit_dist[i][j]
+                output.append(1/loss)
+                scores.append(edit)
+                cost+=crit(preds[j],target[j])
+            output=torch.Tensor(output).to(device="cuda")
+            output=nn.functional.softmax(output,dim=0)
+            scores=torch.Tensor(scores).tp(device="cuda")
+            scores=torch.mean(scores,dim=0)
+            scores=nn.functional.softmax(scores,dim=0)
+            output = torch.unsqueeze(output, dim=0).to(device="cuda")
+            scores = torch.unsqueeze(scores, dim=0).to(device="cuda")
+            cost+= nn.KLDivLoss(reduction="batchmean")(output, scores)
+                    
+                
+                
+                                
+                            
         else:
             preds = model(image, text[:, :-1])  # align with Attention.forward
             target = text[:, 1:]  # without [GO] Symbol
