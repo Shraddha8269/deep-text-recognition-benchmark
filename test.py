@@ -33,7 +33,7 @@ def first_loss(prob,word):
   return -loss
 
 
-def edit_distance(actual,dict):
+def edit_distance1(actual,dict):
   total=0
   distance=[]
   t=0.3 #tunable parameter
@@ -83,7 +83,7 @@ def loss_(predicted,actual,preds_prob):
   print(p)"""
   p=[i[0] for i in p]
   #print(p)
-  edit_dist,total_dist=edit_distance(actual,p)
+  edit_dist,total_dist=edit_distance1(actual,p)
   min_=float('inf')
   ans=[]
   for j in range(len(p)):
@@ -99,7 +99,7 @@ def loss_(predicted,actual,preds_prob):
   actual_loss=first_loss(preds_prob,actual)
   #print(actual_loss)
   #print(p)
-  edit_dist,total_dist=edit_distance(actual,p)
+  #edit_dist,total_dist=edit_distance(actual,p)
   loss2,total_loss=second_loss(preds_prob,p)
   divergence=0
   min_=float('inf')
