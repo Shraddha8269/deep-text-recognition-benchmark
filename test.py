@@ -283,6 +283,7 @@ def validation(model, criterion, evaluation_loader, converter, opt):
 
             if pred == gt:
                 n_correct += 1
+                continue
             pred=loss_(pred,gt,pred_max_prob)
             if pred==gt:
                 n_correct+=1
