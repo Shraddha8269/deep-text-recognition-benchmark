@@ -283,10 +283,10 @@ def validation(model, criterion, evaluation_loader, converter, opt):
 
             if pred == gt:
                 n_correct += 1
-                continue
-            pred=loss_(pred,gt,pred_max_prob)
-            if pred==gt:
-                n_correct+=1
+            else:
+                pred=loss_(pred,gt,pred_max_prob)
+                if pred==gt:
+                    n_correct+=1
 
             '''
             (old version) ICDAR2017 DOST Normalized Edit Distance https://rrc.cvc.uab.es/?ch=7&com=tasks
