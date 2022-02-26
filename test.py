@@ -261,7 +261,7 @@ def validation(model, criterion, evaluation_loader, converter, opt):
         preds_prob = F.softmax(preds, dim=2)
         preds_max_prob, _ = preds_prob.max(dim=2)
         confidence_score_list = []
-        for gt, pred, pred_max_prob in zip(labels, preds_str, preds_max_prob):
+        for gt, pred, pred_max_prob in zip(labels, preds_str, preds_prob):
             if  opt.Transformer:
                 pred_EOS = pred.find('[s]')
                 pred = pred[:pred_EOS]  # prune after "end of sentence" token ([s])
