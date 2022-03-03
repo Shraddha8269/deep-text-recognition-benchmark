@@ -265,7 +265,7 @@ def validation(model, criterion, evaluation_loader, converter, opt):
             if  opt.Transformer:
                 pred_EOS = pred.find('[s]')
                 pred = pred[:pred_EOS]  # prune after "end of sentence" token ([s])
-                pred_max_prob = pred_max_prob[:pred_EOS]
+                #pred_max_prob = pred_max_prob[:pred_EOS]
             elif 'Attn' in opt.Prediction:
                 gt = gt[:gt.find('[s]')]
                 pred_EOS = pred.find('[s]')
